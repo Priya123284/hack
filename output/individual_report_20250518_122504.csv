@@ -1,0 +1,6 @@
+Person ID,First Detected,Total Time (s),Productive Time (s),Break Time (s),Idle Time (s),Productivity Ratio (%),Current Zone
+310,12:21:20,0.0,0,0.0,229,0.0,desk_area
+381,12:23:09,0.0,0,0.0,77,0.0,desk_area
+393,12:24:09,41.02786588668823,0,41.02786588668823,0,0.0,break_area
+408,12:24:58,0.0,0,0.0,0,0.0,desk_area
+409,12:24:59,0.0,0,0.0,0,0.0,break_area

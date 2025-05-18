@@ -1,0 +1,6 @@
+Person ID,First Detected,Total Time (s),Productive Time (s),Break Time (s),Idle Time (s),Productivity Ratio (%),Current Zone
+1,10:13:09,265.1146697998047,251.94977498054504,13.164894819259644,0,95.03426391711903,Unknown
+32,10:20:54,0.0,0.0,0.0,0,0.0,break_area
+35,10:21:24,5.642702102661133,0.0,5.642702102661133,0,0.0,break_area
+40,10:21:54,0.0,0.0,0.0,0,0.0,break_area
+41,10:21:58,2.803884983062744,0.0,2.803884983062744,0,0.0,Unknown
