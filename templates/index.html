@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Occupancy Monitoring System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .video-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .video-feed {
+            max-width: 100%;
+            border: 3px solid #343a40;
+            border-radius: 5px;
+        }
+        .stats-card {
+            margin-bottom: 20px;
+        }
+        .stats-header {
+            background-color: #343a40;
+            color: white;
+        }
+        .zone-productive {
+            background-color: rgba(40, 167, 69, 0.2);
+        }
+        .zone-break {
+            background-color: rgba(255, 193, 7, 0.2);
+        }
+        .person-idle {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+        .dashboard {
+            margin-top: 20px;
+        }
+        .counter-card {
+            text-align: center;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            color: white;
+        }
+        .counter-total {
+            background-color: #17a2b8;
+        }
+        .counter-active {
+            background-color: #28a745;
+        }
+        .counter-idle {
+            background-color: #dc3545;
+        }
+        h5 {
+            margin-bottom: 0;
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .counter-card {
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1 class="mt-3 mb-4">Occupancy Monitoring System</h1>
+ 
+<!-- Control Buttons -->
+     <div class="row control-buttons">
+            <div class="col-md-12">
+                <button id="startBtn" class="btn btn-control btn-start text-white">
+                    <i class="bi bi-play-fill"></i> Start Monitoring
+                </button>
+                <button id="stopBtn" class="btn btn-control btn-stop text-white">
+                    <i class="bi bi-stop-fill"></i> Stop Monitoring
+                </button>
+                <button id="downloadBtn" class="btn btn-control btn-download text-white">
+                    <i class="bi bi-download"></i> Download Report
+                </button>
+            </div>
+        </div>
+
+        
+        <!-- Dashboard Summary -->
+        <div class="row dashboard">
+            <div class="col-md-4">
+                <div class="counter-card counter-total">
+                    <h3 id="total-count">0</h3>
+                    <h5>Total People</h5>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="counter-card counter-active">
+                    <h3 id="active-count">0</h3>
+                    <h5>Active</h5>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="counter-card counter-idle">
+                    <h3 id="idle-count">0</h3>
+                    <h5>Idle</h5>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <!-- Video Feed -->
+            <div class="col-lg-8">
+                <div class="video-container">
+                    <img src="{{ url_for('video_feed') }}" class="video-feed" alt="Live Feed">
+                    <p class="text-muted mt-2">Last updated: <span id="timestamp">Loading...</span></p>
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="col-lg-4">
+                <!-- Zone Statistics -->
+                <div class="card stats-card">
+                    <div class="card-header stats-header">
+                        <h4 class="mb-0">Zone Occupancy</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="zones-container">
+                            <p>Loading zone data...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Person Statistics -->
+                <div class="card stats-card">
+                    <div class="card-header stats-header">
+                        <h4 class="mb-0">Person Statistics</h4>
+                    </div>
+                    <div class="card-body">
+                        <div id="people-container">
+                            <p>Loading people data...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update statistics regularly
+        function updateStats() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    // Update summary counters
+                    document.getElementById('total-count').textContent = data.total_count;
+                    document.getElementById('active-count').textContent = data.active_count;
+                    document.getElementById('idle-count').textContent = data.idle_count;
+                    document.getElementById('timestamp').textContent = data.timestamp;
+                    
+                    // Update zone information
+                    let zonesHTML = '';
+                    for (const [zoneName, zoneData] of Object.entries(data.zones)) {
+                        const zoneClass = zoneData.type === 'productive' ? 'zone-productive' : 'zone-break';
+                        zonesHTML += `
+                            <div class="card mb-2 ${zoneClass}">
+                                <div class="card-body py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5>${zoneName}</h5>
+                                        <span class="badge bg-secondary">${zoneData.occupancy} people</span>
+                                    </div>
+                                    <small class="text-muted">Type: ${zoneData.type}</small>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    if (zonesHTML === '') {
+                        zonesHTML = '<p>No zones defined</p>';
+                    }
+                    document.getElementById('zones-container').innerHTML = zonesHTML;
+                    
+                    // Update people information
+                    let peopleHTML = '';
+                    for (const [personId, personData] of Object.entries(data.people)) {
+                        const personClass = personData.is_idle ? 'person-idle' : '';
+                        const statusClass = personData.is_idle ? 'bg-danger' : 'bg-success';
+                        const statusText = personData.is_idle ? 'IDLE' : 'ACTIVE';
+                        
+                        peopleHTML += `
+                            <div class="card mb-2 ${personClass}">
+                                <div class="card-body py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5>Person ID: ${personId}</h5>
+                                        <span class="badge ${statusClass}">${statusText}</span>
+                                    </div>
+                                    <div class="small">
+                                        <div>Zone: ${personData.current_zone}</div>
+                                        <div>Productive time: ${personData.productive_time}</div>
+                                        <div>Break time: ${personData.break_time}</div>
+                                        <div>Idle time: ${personData.idle_time}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    if (peopleHTML === '') {
+                        peopleHTML = '<p>No people detected</p>';
+                    }
+                    document.getElementById('people-container').innerHTML = peopleHTML;
+                })
+                .catch(error => {
+                    console.error('Error fetching stats:', error);
+                });
+        }
+        
+        // Initial update
+        updateStats();
+        
+        // Update every 2 seconds
+        setInterval(updateStats, 2000);
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
